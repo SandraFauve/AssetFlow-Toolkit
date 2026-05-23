@@ -40,6 +40,15 @@ renders/
 **Use case:** Multi-layer render setups where manually creating and connecting nodes for each View Layer is repetitive and error-prone.
  
 ---
+
+## In Development
+
+### Missing Files Cleaner
+Scans the scene for missing external file references — textures, libraries, 
+sounds, movie clips, fonts and volumes — and removes them in one click. 
+Simulation caches are flagged for manual cleanup.
+
+> ⚠️ Sequencer strip removal currently not supported due to Blender 4.x API limitations.
  
 ## Installation
  
