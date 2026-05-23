@@ -1,4 +1,4 @@
-import bpy
+propertyimport bpy
 from bpy.props import StringProperty
 
 
