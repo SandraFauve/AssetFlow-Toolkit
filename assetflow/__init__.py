@@ -1,7 +1,7 @@
 bl_info = {
     "name": "AssetFlow Toolkit",
     "author": "Tu Nombre",
-    "version": (1, 0, 0),
+    "version": (1, 1, 0),
     "blender": (3, 6, 0),
     "location": "View3D > Sidebar > AssetFlow | Properties > Render > AssetFlow",
     "description": "Pipeline utilities for Blender production workflows",
