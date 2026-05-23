@@ -6,7 +6,7 @@ def get_missing_files():
     missing = []
 
     for image in bpy.data.images:
-        if image.source == 'FILE' and image.filepath:
+        if image.source == 'FILE' and image.filepath and not image.packed_file:
             path = bpy.path.abspath(image.filepath)
             if not os.path.exists(path):
                 missing.append({
