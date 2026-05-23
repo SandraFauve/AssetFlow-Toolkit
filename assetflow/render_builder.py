@@ -1,5 +1,5 @@
-propertyimport bpy
 from bpy.props import StringProperty
+import bpy
 
 
 class ASSETFLOW_PG_render_settings(bpy.types.PropertyGroup):
