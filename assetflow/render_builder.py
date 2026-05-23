@@ -100,7 +100,7 @@ class ASSETFLOW_OT_build_file_output_only(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
-        scene = bpy.context.scene
+        scene = context.scene
 
         if not scene.use_nodes:
             scene.use_nodes = True
@@ -111,7 +111,7 @@ class ASSETFLOW_OT_build_file_output_only(bpy.types.Operator):
             self.report({'WARNING'}, "No Render Layer nodes found in compositor")
             return {'CANCELLED'}
 
-        build_file_output(bpy.context, rl_nodes)
+        build_file_output(context, rl_nodes)
 
         self.report(
             {'INFO'},
