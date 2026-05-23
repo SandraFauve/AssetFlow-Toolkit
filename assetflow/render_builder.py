@@ -1,5 +1,5 @@
 import bpy
-from bpy.props import StringProperty, EnumProperty
+from bpy.props import StringProperty
 
 
 class ASSETFLOW_PG_render_settings(bpy.types.PropertyGroup):
@@ -10,36 +10,16 @@ class ASSETFLOW_PG_render_settings(bpy.types.PropertyGroup):
         subtype='DIR_PATH'
     )
 
-    file_format: EnumProperty(
-        name="Format",
-        items=[
-            ('PNG',                 "PNG",            ""),
-            ('OPEN_EXR',            "EXR",            ""),
-            ('OPEN_EXR_MULTILAYER', "EXR Multilayer", ""),
-            ('JPEG',                "JPEG",           ""),
-            ('TIFF',                "TIFF",           ""),
-        ],
-        default='PNG'
-    )
-    color_depth: EnumProperty(
-        name="Color Depth",
-        items=[
-            ('8',  "8 bit",  ""),
-            ('16', "16 bit", ""),
-            ('32', "32 bit", ""),
-        ],
-        default='16'
-    )
-
 def build_file_output(context, rl_nodes):
     settings = context.scene.assetflow_render
     tree = context.scene.node_tree
+    image_settings = context.scene.render.image_settings
 
     fo_node = tree.nodes.new('CompositorNodeOutputFile')
     fo_node.label = "AssetFlow_Output"
     fo_node.base_path = settings.base_path          
-    fo_node.format.file_format = settings.file_format  
-    fo_node.format.color_depth = settings.color_depth  
+    fo_node.format.file_format = image_settings.file_format
+    fo_node.format.color_depth = image_settings.color_depth
 
     max_x = max(n.location.x for n in rl_nodes)
     avg_y = sum(n.location.y for n in rl_nodes) / len(rl_nodes)
@@ -130,13 +110,13 @@ class ASSETFLOW_PT_render_builder(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
         settings = context.scene.assetflow_render
+        image_settings = context.scene.render.image_settings
 
         col = layout.column(align=True)
         col.label(text="Render Layer Organization", icon='RENDERLAYERS')
         col.separator()
         col.prop(settings, "base_path")
-        col.prop(settings, "file_format")
-        col.prop(settings, "color_depth")
+        col.template_image_settings(image_settings, color_management=False)
         col.operator(
             "assetflow.build_full_compositor",
             text="Build Render Output Nodes",
