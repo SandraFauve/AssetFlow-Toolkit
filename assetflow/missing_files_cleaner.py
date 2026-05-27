@@ -3,42 +3,19 @@ import os
 
 
 def get_missing_files():
+    """Get only missing files that Blender's 'Report Missing Files' would show"""
     missing = []
 
-    # Imgages
-    for image in bpy.data.images:
-        if image.source == 'FILE' and image.filepath and not image.packed_file:
-            path = bpy.path.abspath(image.filepath)
+    # Python scripts
+    for text in bpy.data.texts:
+        if text.filepath:
+            path = bpy.path.abspath(text.filepath)
             if not os.path.exists(path):
                 missing.append({
-                    'type': 'IMAGE',
-                    'name': image.name,
-                    'path': image.filepath,
-                    'datablock': image
-                })
-
-    # Libraries 
-    for library in bpy.data.libraries:
-        if library.filepath:
-            path = bpy.path.abspath(library.filepath)
-            if not os.path.exists(path):
-                missing.append({
-                    'type': 'LIBRARY',
-                    'name': library.name,
-                    'path': library.filepath,
-                    'datablock': library
-                })
-
-    # Sounds (speakers)
-    for sound in bpy.data.sounds:
-        if sound.filepath and not sound.packed_file:
-            path = bpy.path.abspath(sound.filepath)
-            if not os.path.exists(path):
-                missing.append({
-                    'type': 'SOUND',
-                    'name': sound.name,
-                    'path': sound.filepath,
-                    'datablock': sound
+                    'type': 'SCRIPT',
+                    'name': text.name,
+                    'path': text.filepath,
+                    'datablock': text
                 })
 
     # Movie clips (motion tracking)
@@ -53,31 +30,35 @@ def get_missing_files():
                     'datablock': clip
                 })
 
-    # Fonts
-    for font in bpy.data.fonts:
-        if font.filepath and font.filepath != '<builtin>':
-            path = bpy.path.abspath(font.filepath)
+    # Sounds (speakers)
+    for sound in bpy.data.sounds:
+        if sound.filepath and not sound.packed_file:
+            path = bpy.path.abspath(sound.filepath)
             if not os.path.exists(path):
                 missing.append({
-                    'type': 'FONT',
-                    'name': font.name,
-                    'path': font.filepath,
-                    'datablock': font
+                    'type': 'SOUND',
+                    'name': sound.name,
+                    'path': sound.filepath,
+                    'datablock': sound
                 })
 
-    # VDB
-    for volume in bpy.data.volumes:
-        if volume.filepath:
-            path = bpy.path.abspath(volume.filepath)
-            if not os.path.exists(path):
-                missing.append({
-                    'type': 'VOLUME',
-                    'name': volume.name,
-                    'path': volume.filepath,
-                    'datablock': volume
-                })
+    # Camera background images
+    for obj in bpy.data.objects:
+        if obj.type == 'CAMERA' and obj.data.background_images:
+            for bg_img in obj.data.background_images:
+                if bg_img.image and bg_img.image.source == 'FILE':
+                    image = bg_img.image
+                    if image.filepath and not image.packed_file:
+                        path = bpy.path.abspath(image.filepath)
+                        if not os.path.exists(path):
+                            missing.append({
+                                'type': 'BG IMAGE',
+                                'name': f"{obj.name} → {image.name}",
+                                'path': image.filepath,
+                                'datablock': image
+                            })
 
-    # video and sound
+    # Sequencer strips (video, sound, image sequences)
     if bpy.context.scene.sequence_editor:
         for strip in bpy.context.scene.sequence_editor.sequences_all:
             if strip.type in ('MOVIE', 'SOUND', 'IMAGE'):
@@ -92,66 +73,10 @@ def get_missing_files():
                             'channel': strip.channel
                         })
 
-    # Scripts
-    for text in bpy.data.texts:
-        if text.filepath:
-            path = bpy.path.abspath(text.filepath)
-            if not os.path.exists(path):
-                missing.append({
-                    'type': 'SCRIPT',
-                    'name': text.name,
-                    'path': text.filepath,
-                    'datablock': text
-                })
-
-    # Csimulation caches (fluid, cloth, particles)
-    for obj in bpy.data.objects:
-        for modifier in obj.modifiers:
-
-            # Fluid
-            if modifier.type == 'FLUID':
-                cache_dir = modifier.domain_settings.cache_directory
-                if cache_dir:
-                    path = bpy.path.abspath(cache_dir)
-                    if not os.path.exists(path):
-                        missing.append({
-                            'type': 'CACHE_FLUID',
-                            'name': f"{obj.name} → {modifier.name}",
-                            'path': cache_dir,
-                            'datablock': None
-                        })
-
-            # Cloth and Softbody
-            if modifier.type in ('CLOTH', 'SOFT_BODY'):
-                cache = modifier.point_cache
-                if cache.use_disk_cache:
-                    cache_path = bpy.path.abspath(f"//{cache.name}")
-                    if not os.path.exists(cache_path):
-                        missing.append({
-                            'type': f'CACHE_{modifier.type}',
-                            'name': f"{obj.name} → {modifier.name}",
-                            'path': cache_path,
-                            'datablock': None
-                        })
-
-            # Particles
-            if modifier.type == 'PARTICLE_SYSTEM':
-                cache = modifier.particle_system.point_cache
-                if cache.use_disk_cache:
-                    cache_path = bpy.path.abspath(f"//{cache.name}")
-                    if not os.path.exists(cache_path):
-                        missing.append({
-                            'type': 'CACHE_PARTICLES',
-                            'name': f"{obj.name} → {modifier.name}",
-                            'path': cache_path,
-                            'datablock': None
-                        })
-
     return missing
 
 
 class ASSETFLOW_OT_scan_missing_files(bpy.types.Operator):
-
     bl_idname = "assetflow.scan_missing_files"
     bl_label = "Scan Missing Files"
     bl_options = {'REGISTER', 'UNDO'}
@@ -159,7 +84,6 @@ class ASSETFLOW_OT_scan_missing_files(bpy.types.Operator):
     def execute(self, context):
         missing = get_missing_files()
         context.scene.assetflow_missing_count = len(missing)
-
 
         context.scene.assetflow_missing_files.clear()
         for item in missing:
@@ -177,7 +101,6 @@ class ASSETFLOW_OT_scan_missing_files(bpy.types.Operator):
 
 
 class ASSETFLOW_OT_clean_missing_files(bpy.types.Operator):
-
     bl_idname = "assetflow.clean_missing_files"
     bl_label = "Clean All Missing"
     bl_options = {'REGISTER', 'UNDO'}
@@ -197,25 +120,22 @@ class ASSETFLOW_OT_clean_missing_files(bpy.types.Operator):
                 if db is None:
                     self.report({'WARNING'}, f"Manual cleanup needed: {item['name']}")
                     continue
-                if item['type'] == 'IMAGE':
-                    bpy.data.images.remove(db)
-                elif item['type'] == 'LIBRARY':
-                    bpy.data.libraries.remove(db)
-                elif item['type'] == 'SOUND':
-                    bpy.data.sounds.remove(db)
+                
+                if item['type'] == 'SCRIPT':
+                    bpy.data.texts.remove(db)
                 elif item['type'] == 'MOVIE CLIP':
                     bpy.data.movieclips.remove(db)
-                elif item['type'] == 'FONT':
-                    bpy.data.fonts.remove(db)
-                elif item['type'] == 'VOLUME':
-                    bpy.data.volumes.remove(db)
+                elif item['type'] == 'SOUND':
+                    bpy.data.sounds.remove(db)
+                elif item['type'] == 'BG IMAGE':
+                    bpy.data.images.remove(db)
                 elif item['type'].startswith('SEQUENCE_'):
                     seq_editor = context.scene.sequence_editor
-                    strip = seq_editor.sequences_all.get(item['name'])
-                    if strip:
-                        seq_editor.sequences.remove(strip)
-                elif item['type'] == 'SCRIPT':
-                    bpy.data.texts.remove(db)
+                    if seq_editor:
+                        strip = seq_editor.sequences_all.get(item['name'])
+                        if strip:
+                            seq_editor.sequences.remove(strip)
+                
                 cleaned += 1
             except Exception as e:
                 self.report({'WARNING'}, f"Could not remove {item['name']}: {e}")
